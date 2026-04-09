@@ -1,0 +1,26 @@
+<project>
+    <property name="javahome" value="/usr/lib64/openjdk-25"/>
+    <target name="clean">
+        <delete dir="build"/>
+    </target>
+    
+    <target name="compile">
+        <mkdir dir="build/classes"/>
+        <javac srcdir="src" destdir="build/classes" includeAntRuntime="no" />
+    </target>
+
+    <target name="jar">
+        <exec executable="${javahome}\bin\jar" dir="${basedir}">
+            <arg value="--create"/>
+            <arg value="--file=build/jar/Sxtorm.jar"/>
+            <arg value="--main-class=sxtorm.Sxtorm"/>
+            <arg value="-C"/>
+            <arg value="build/classes"/>
+            <arg value="."/>
+        </exec>
+    </target>
+
+    <target name="run">
+        <java jar="build/jar/Sxtorm.jar" fork="true"/>
+    </target>
+</project>

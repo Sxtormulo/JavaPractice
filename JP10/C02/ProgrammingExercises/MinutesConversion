@@ -1,0 +1,19 @@
+#!/usr/bin/java --source 25
+
+void main()
+{
+    final int MINUTES_PER_HOUR = 60, MINUTES_PER_DAY = 1440;
+    double totalHours, totalDays;
+    
+    int inputMinutes = Integer.parseInt(
+                                        IO.readln("Enter the numbers o minutes to covert>>> "));
+    
+    totalHours = inputMinutes / MINUTES_PER_HOUR;
+    totalDays = inputMinutes / MINUTES_PER_DAY;
+    
+    String minutesConversion = """
+        In %d minutes are:
+        %2.2f  hours and  %2.2f days""".formatted(inputMinutes, totalHours, totalDays);
+    
+    IO.println(minutesConversion);
+}

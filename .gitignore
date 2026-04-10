@@ -25,3 +25,5 @@ replay_pid*
 
 #omit build files 
 out/*
+# omit mail
+.maildir/*

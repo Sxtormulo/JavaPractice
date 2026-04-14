@@ -33,6 +33,7 @@ import module java.base;
 public class RadixSortLSD
 {
 
+    private static final int POSITIVE_DIGITS = 9;
     private static final int RADIX_SLOTS = 19;
     private static final int START = 0;
     private static final int TWO_ELEMENTS = 2;
@@ -50,6 +51,12 @@ public class RadixSortLSD
                 e -> e.getFirst() <= e.getLast());
     };
 
+    /** Provides a container to store all sorted digit, by radix */
+    private static final Supplier<List<? extends List<Integer>>> newRadixContainer =
+        () -> IntStream.range(START, RADIX_SLOTS)
+            .mapToObj(_ -> new ArrayList<Integer>(2))
+            .toList();
+
     /**
      * Produces the value of the radix digit in the current value place
      *
@@ -62,6 +69,13 @@ public class RadixSortLSD
         final int digits = 10;
         return (value / Math.powExact(digits, exponent)) % digits;
     };
+
+    /** Unifies the elements of the second list in the first list */
+    private static final BiConsumer<List<? extends List<Integer>>, List<? extends List<Integer>>> radixContainerCombiner =
+        (l1, l2) -> IntStream.range(START, RADIX_SLOTS)
+            .forEach(i -> l1.get(i)
+                .addAll(l2.get(i)));
+
     /**
      * Operates a step inside the radix sort algorithm, sorting the numbers as the given
      * digit place value
@@ -70,28 +84,51 @@ public class RadixSortLSD
      * @param place    the value place for sorting
      * @return the list sorted as ordered in the value place
      */
-    private static final BiFunction<List<Integer>, Integer, List<Integer>> radixSortPlaceStep
-        = (unsorted, place) ->
+    private static final BiFunction<List<Integer>, Integer, List<Integer>> radixSortPlaceStep =
+        (unsorted, place) ->
     {
         return unsorted.stream()
-            .collect(Collectors.collectingAndThen(Collectors.groupingBy(i ->
-                producePlaceDigit.applyAsInt(i, place)), s -> s.values()
-                                                  .stream()
-                                                  .flatMap(l -> l.stream())
-                                                  .collect(Collectors.toList())));
+            .collect(newRadixContainer, (l, i) -> l.get(
+                     producePlaceDigit.applyAsInt(i, place) + POSITIVE_DIGITS)
+                     .add(i), radixContainerCombiner
+            )
+            .stream()
+            .flatMap(c -> c.stream())
+            .toList();
     };
 
-    public static List<Integer> sort(List<Integer> unsortedList)
+//    public static List<Integer> sort(List<Integer> unsortedList)
+//    {
+//        // avoid doing cost sort for only one element list
+//        if(unsortedList.size() < TWO_ELEMENTS) return List.copyOf(unsortedList);
+//        if(isSorted.test(unsortedList)) return List.copyOf(unsortedList);
+//
+//        int valueLenght;
+//        valueLenght = findLongestValueLength(unsortedList);
+//        //        IntStream
+//        //            .range(START, valueLenght)
+//
+//    }
+    private Gatherer<Integer, ?, Integer> radixSort(List<Integer> unsortedList)
     {
-        // avoid doing cost sort for only one element list
-        if(unsortedList.size() < TWO_ELEMENTS) return List.copyOf(unsortedList);
-        if(isSorted.test(unsortedList)) return List.copyOf(unsortedList);
-
-        int valueLenght;
-        valueLenght = findLongestValueLength(unsortedList);
-        //        IntStream
-        //            .range(START, valueLenght)
-
+//        Supplier<List<Integer>> container = ArrayList<Integer>::new;
+        Supplier<List<Integer>> container = () -> new ArrayList<Integer>(unsortedList);
+        Gatherer.Integrator<List<Integer>, Integer, Integer> sort =
+            (list, r, downstream) ->
+        {
+            IO.println("pre" + list);
+            var tempList = radixSortPlaceStep.apply(list, r);
+            list.clear();
+            list.addAll(tempList);
+            IO.println("post" + list);
+            return true;
+        };
+        BiConsumer<List<Integer>, Gatherer.Downstream<? super Integer>> finisher =
+            (list, downstream) -> list.stream()
+                .allMatch(downstream::push);
+        Gatherer<Integer, List<Integer>, Integer> radixSorter = Gatherer
+            .ofSequential(container, sort, finisher);
+        return radixSorter;
     }
 
     /**

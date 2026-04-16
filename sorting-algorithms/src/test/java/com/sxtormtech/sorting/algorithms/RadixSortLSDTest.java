@@ -20,14 +20,12 @@ package com.sxtormtech.sorting.algorithms;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import module java.base;
 
-/**
- *
- * @author Sxtormulo
- */
+/** Testing that the radix sort of least significant digit works correctly */
 @DisplayName("Testing radix sort lsd")
 public class RadixSortLSDTest
 {
@@ -36,6 +34,23 @@ public class RadixSortLSDTest
     {
     }
 
+    /** Test if sort works with a list of positive numbers */
+    @Test
+    public void testSort_IfSortWorksWithPositive()
+    {
+        // [194, 231, 105, 182, 245, 104, 38, 191, 5, 107, 137, 254, 117, 191, 145]
+        final var unsortedList = new Random(2003L).ints(0, 300)
+            .limit(20)
+            .boxed()
+            .toList();
+        final var sortedList = unsortedList.stream()
+            .sorted()
+            .toList();
+        assertTrue(() -> sortedList
+            .equals(RadixSortLSD.sort(unsortedList)));
+    }
+
+    /** Testing if sort works with a list of positive and negative numbers */
     @Test
     public void testSort_ifWorksWithMixedNumbers()
     {
@@ -53,10 +68,12 @@ public class RadixSortLSDTest
             .equals(RadixSortLSD.sort(unsortedList)));
     }
 
+    /** Test if sort works with a list of only negative numbers */
     @Test
     public void testSort_ifWorksWithNegativeNumbers()
     {
 
+        // [-106, -69, -195, -118, -55, -196, -262, -109, -295, -193, -163, -46, -183, -109, -155]
         final var unsortedList = new Random(2003L).ints(-300, 300)
             .limit(15)
             .boxed()
@@ -69,22 +86,18 @@ public class RadixSortLSDTest
             .equals(RadixSortLSD.sort(unsortedList)));
     }
 
-    /**
-     *
-     */
+    /** Test if the returned list is unmodifiable */
     @Test
-    public void testSort_IfSortWorksWithPositive()
+    public void testThat_AttemptingToModifyTheReturnedList_ThrowsUnsupportedOperationException()
     {
-        // [194, 231, 105, 182, 245, 104, 38, 191, 5, 107, 137, 254, 117, 191, 145]
-        final var unsortedList = new Random(2003L).ints(0, 300)
-            .limit(20)
+        //  [-106, 231, 105, -118, -55, -196, 38, -109, 5, -193, -163, 254, -183, -109, -155]
+        final var unsortedList = new Random(2003L).ints(-300, 300)
+            .limit(15)
             .boxed()
             .toList();
-        final var sortedList = unsortedList.stream()
-            .sorted()
-            .toList();
-        assertTrue(() -> sortedList
-            .equals(RadixSortLSD.sort(unsortedList)));
+        final var sortedList = RadixSortLSD.sort(unsortedList);
+        assertThrows(UnsupportedOperationException.class, () ->
+                     sortedList.add(5)
+        );
     }
-
 }

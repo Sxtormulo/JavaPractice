@@ -46,6 +46,13 @@ enum DecimalPlaceValue
     HUNDRED_MILLIONS(9, 999_999_999),
     /** Tenth decimal place value */
     BILLIONS(10, 9_999_999_999L);
+    /*
+     * When adding support to unsigned values
+     * Máximun possible DecimalPlaceValue
+     * Máximun place 20
+     * Limit -1 (As unsigned 18_446_744_073_709_551_615)
+     * value -8_446_744_073_709_551_616 (As unsigned 10_000_000_000_000_000_000)
+     */
     /** The decimal value limit */
     private final long limit;
     /** The decimal place value */

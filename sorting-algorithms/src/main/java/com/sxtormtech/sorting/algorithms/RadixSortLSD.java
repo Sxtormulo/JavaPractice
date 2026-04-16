@@ -1,4 +1,5 @@
 /*
+ * RadixSortLSD - Order an List by their radix; without making comparisons
  * Copyright (C) 2026 Sxtormulo
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -20,20 +21,15 @@ package com.sxtormtech.sorting.algorithms;
 import module java.base;
 
 /**
- * RadixSortLSD - Order an List by their radix; without making comparisons
- *
- * @author Sxtormulo
- * Copyright 2026
- * SPDX-License-Identifier: GPL-3.0-or-later
- */
-/**
  * A class that provide the implementation of radix sort algorithm. This sort is made
  * from lest significant digit to most.
  */
 public class RadixSortLSD
 {
 
+    /** Number or buckets to save positive digits */
     private static final int POSITIVE_DIGITS = 9;
+    /** Available digits from negative to positive */
     private static final int RADIX_SLOTS = 19;
     private static final int START = 0;
     private static final int TWO_ELEMENTS = 2;
@@ -97,38 +93,31 @@ public class RadixSortLSD
             .toList();
     };
 
-//    public static List<Integer> sort(List<Integer> unsortedList)
-//    {
-//        // avoid doing cost sort for only one element list
-//        if(unsortedList.size() < TWO_ELEMENTS) return List.copyOf(unsortedList);
-//        if(isSorted.test(unsortedList)) return List.copyOf(unsortedList);
-//
-//        int valueLenght;
-//        valueLenght = findLongestValueLength(unsortedList);
-//        //        IntStream
-//        //            .range(START, valueLenght)
-//
-//    }
-    private Gatherer<Integer, ?, Integer> radixSort(List<Integer> unsortedList)
+    private RadixSortLSD()
     {
-//        Supplier<List<Integer>> container = ArrayList<Integer>::new;
-        Supplier<List<Integer>> container = () -> new ArrayList<Integer>(unsortedList);
-        Gatherer.Integrator<List<Integer>, Integer, Integer> sort =
-            (list, r, downstream) ->
-        {
-            IO.println("pre" + list);
-            var tempList = radixSortPlaceStep.apply(list, r);
-            list.clear();
-            list.addAll(tempList);
-            IO.println("post" + list);
-            return true;
-        };
-        BiConsumer<List<Integer>, Gatherer.Downstream<? super Integer>> finisher =
-            (list, downstream) -> list.stream()
-                .allMatch(downstream::push);
-        Gatherer<Integer, List<Integer>, Integer> radixSorter = Gatherer
-            .ofSequential(container, sort, finisher);
-        return radixSorter;
+    }
+
+    /**
+     * Sort a unordered list using LSD radix sort algorithm. This method can sort lists
+     * containing both positive and negative values. The returned list in unmodifiable.
+     * Attempting to modify it throws an {@code UnsupportedOperationException}
+     *
+     * @param unsortedList the list to be sorted
+     * @return a sorted list with the passed values
+     */
+    public static List<Integer> sort(List<Integer> unsortedList)
+    {
+        // avoid doing cost sort for only one element list
+        if(unsortedList.size() < TWO_ELEMENTS) return List.copyOf(unsortedList);
+        if(isSorted.test(unsortedList)) return List.copyOf(unsortedList);
+
+        int valueLenght;
+        valueLenght = findLongestValueLength(unsortedList);
+        return IntStream.range(START, valueLenght)
+            .boxed()
+            .gather(radixSort((unsortedList)))
+            .toList();
+
     }
 
     /**
@@ -159,6 +148,31 @@ public class RadixSortLSD
             .getPlace();
 
         return valueLength;
+    }
+
+    /**
+     * A Gatherer that performs radix sort over the list passed as parameter.
+     * <p>
+     * From the stream it gets the decimal place values to produce the sort.
+     * It is a sequential gatherer
+     */
+    private static Gatherer<Integer, ?, Integer> radixSort(List<Integer> unsortedList)
+    {
+        Supplier<List<Integer>> container = () -> new ArrayList<Integer>(unsortedList);
+        Gatherer.Integrator.Greedy<List<Integer>, Integer, Integer> sort =
+            (list, r, downstream) ->
+        {
+            var tempList = radixSortPlaceStep.apply(list, r);
+            list.clear();
+            list.addAll(tempList);
+            return true;
+        };
+        BiConsumer<List<Integer>, Gatherer.Downstream<? super Integer>> finisher =
+            (list, downstream) -> list.stream()
+                .allMatch(downstream::push);
+        Gatherer<Integer, List<Integer>, Integer> radixSorter = Gatherer
+            .ofSequential(container, sort, finisher);
+        return radixSorter;
     }
 
 }

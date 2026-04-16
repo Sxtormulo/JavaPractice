@@ -1,4 +1,5 @@
 /*
+ * DecimalPlaceValue - the decimal place values with their limit values
  * Copyright (C) 2026 Sxtormulo
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -19,13 +20,6 @@ package com.sxtormtech.sorting.algorithms;
 
 import module java.base;
 
-/**
- * DecimalPlaceValue - the decimal place values with their limit values
- *
- * @author Sxtormulo
- * Copyright 2026
- * SPDX-License-Identifier: GPL-3.0-or-later
- */
 /**
  * A {@code DecimalPlaceValue} represents a place value in the positional notation fo
  * the decimal system
@@ -52,18 +46,16 @@ enum DecimalPlaceValue
     HUNDRED_MILLIONS(9, 999_999_999),
     /** Tenth decimal place value */
     BILLIONS(10, 9_999_999_999L);
-    /** All decimal place values identified by their place */
-    private static final Map<Integer, DecimalPlaceValue> VALUES = Arrays
-        .stream(values())
-        .unordered()
-        .parallel()
-        .collect(Collectors.toConcurrentMap(d -> d.getPlace(), Function.identity()));
     /** The decimal value limit */
     private final long limit;
     /** The decimal place value */
     private final int place;
     /** the value of the decimal digit */
     private final long value;
+    /** All decimal place values identified by their place */
+    private static final Map<Integer, DecimalPlaceValue> VALUES = Arrays
+        .stream(values())
+        .collect(Collectors.toMap(d -> d.place, Function.identity()));
 
     /**
      * Constructs a {@link DecimalPlaceValue} with the current values
@@ -128,6 +120,7 @@ enum DecimalPlaceValue
      */
     public static DecimalPlaceValue ofValue(long value)
     {
+        value = (value == Long.MIN_VALUE) ? Long.MAX_VALUE : Math.abs(value);
         return switch(value)
         {
             case long i when i > HUNDRED_MILLIONS.getLimit() ->

@@ -17,7 +17,6 @@
  */
 package com.sxtormtech.sorting.algorithms;
 
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -26,8 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import module java.base;
 
 /** Testing that the radix sort of least significant digit works correctly */
-@DisplayName("Testing radix sort lsd")
-public class RadixSortLSDTest
+//@DisplayName("Testing radix sort lsd")
+class RadixSortLSDTest
 {
 
     public RadixSortLSDTest()

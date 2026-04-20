@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.sxtormtech</groupId>
   <artifactId>sorting-algorithms</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>0.0-SNAPSHOT</version>
   <packaging>jar</packaging>
   <build>
     <plugins>
@@ -26,8 +26,8 @@
         <version>3.15.0</version>
         <configuration>
           <compilerArgs>
-            <arg>-Xlint</arg>
             <arg>--enable-preview</arg>
+            <arg>-Xlint</arg>
           </compilerArgs>
         </configuration>
       </plugin>
@@ -103,6 +103,6 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>25</maven.compiler.release>
-    <exec.mainClass>com.sxtormtech.sorting.algorithms.SortingAlgorithms</exec.mainClass>
+    <exec.mainClass>com.sxtormtech.sorting.algorithms.RadixSortLSD</exec.mainClass>
   </properties>
 </project>

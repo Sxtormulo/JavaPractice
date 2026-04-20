@@ -46,6 +46,7 @@ enum DecimalPlaceValue
     HUNDRED_MILLIONS(9, 999_999_999),
     /** Tenth decimal place value */
     BILLIONS(10, 9_999_999_999L);
+    /** All decimal place values identified by their place */
     /*
      * When adding support to unsigned values
      * Máximun possible DecimalPlaceValue
@@ -53,16 +54,15 @@ enum DecimalPlaceValue
      * Limit -1 (As unsigned 18_446_744_073_709_551_615)
      * value -8_446_744_073_709_551_616 (As unsigned 10_000_000_000_000_000_000)
      */
+    private static final Map<Integer, DecimalPlaceValue> VALUES = Arrays
+        .stream(values())
+        .collect(Collectors.toMap(d -> d.place, Function.identity()));
     /** The decimal value limit */
     private final long limit;
     /** The decimal place value */
     private final int place;
     /** the value of the decimal digit */
     private final long value;
-    /** All decimal place values identified by their place */
-    private static final Map<Integer, DecimalPlaceValue> VALUES = Arrays
-        .stream(values())
-        .collect(Collectors.toMap(d -> d.place, Function.identity()));
 
     /**
      * Constructs a {@link DecimalPlaceValue} with the current values
@@ -108,17 +108,6 @@ enum DecimalPlaceValue
     }
 
     /**
-     * Returns the enum constant of this class that represent the given place value
-     *
-     * @param place the positional value
-     * @return the enum constant with the specified place
-     */
-    public static DecimalPlaceValue valueOf(int place)
-    {
-        return VALUES.get(place);
-    }
-
-    /**
      * Returns the enum constant that represents the maximum decimal value place of the
      * argument
      *
@@ -151,6 +140,23 @@ enum DecimalPlaceValue
             case long _ ->
                 ONES;
         };
+    }
+
+    /**
+     * Returns the enum constant of this class that represent the given place value
+     *
+     * @param place the positional value
+     * @return the enum constant with the specified place
+     */
+    public static DecimalPlaceValue valueOf(int place)
+    {
+        final DecimalPlaceValue placeValue = VALUES.get(place);
+        if(placeValue == null) throw new IllegalArgumentException(
+                "No enum constant %s with place value of %d".formatted(MethodHandles
+                    .lookup()
+                    .lookupClass()
+                    .getCanonicalName(), place));
+        return placeValue;
     }
 
 }

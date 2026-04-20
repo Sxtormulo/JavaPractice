@@ -27,6 +27,11 @@ import module java.base;
 public class RadixSortLSD
 {
 
+    private static final int MAX_ARGS = 3;
+    private static final int MAX_DIGIT_ARG = 2;
+    private static final int MIN_DIGIT_ARG = 1;
+    private static final int NUMBERS_TO_GENERATE_ARG = 0;
+
     /** Number or buckets to save positive digits */
     private static final int POSITIVE_DIGITS = 9;
     /** Available digits from negative to positive */
@@ -92,6 +97,36 @@ public class RadixSortLSD
             .flatMap(c -> c.stream())
             .toList();
     };
+
+    void main(String[] args)
+    {
+        if(args.length != MAX_ARGS) usage();
+
+        Consumer<List<Integer>> printList = list -> list.stream()
+            .gather(Gatherers.windowFixed(RADIX_SLOTS))
+            .forEach(IO::println);
+        final long totalNumbers = Long.parseLong(args[NUMBERS_TO_GENERATE_ARG]);
+        final int minDigit = Integer.parseInt(args[MIN_DIGIT_ARG]);
+        final int maxDigit = Integer.parseInt(args[MAX_DIGIT_ARG]);
+        final Random randomNumbers = new Random();
+        final List<Integer> unsortedInts =
+            randomNumbers.ints(totalNumbers, minDigit, maxDigit)
+                .boxed()
+                .toList();
+
+        IO.println("Unordered stream: ");
+        printList.accept(unsortedInts);
+        IO.println("Ordered stream: ");
+        printList.accept(sort(unsortedInts));
+    }
+
+    void usage()
+    {
+        System.err.println(
+            "usage: java --enable-preview --module-path sorting-algorithms-0.0-SNAPSHOT.jar"
+            + " -m com.sxtormtech.sorting.algorithms numbersToGenerate minRange maxRange");
+        System.exit(-1);
+    }
 
     /**
      * Sort a unordered list using LSD radix sort algorithm. This method can sort lists
@@ -170,36 +205,5 @@ public class RadixSortLSD
             .ofSequential(container, sort, finisher);
         return radixSorter;
     }
-
-    void usage()
-    {
-        System.err.println("usage ");
-    }
-
-    void main(String[] args)
-    {
-        if(args.length == 0 | args.length == MAX_ARGS) usage();
-
-        Consumer<List<Integer>> printList = list -> list.stream()
-            .gather(Gatherers.windowFixed(RADIX_SLOTS))
-            .forEach(IO::println);
-        final long totalNumbers = Long.parseLong(args[NUMBERS_TO_GENERATE_ARG]);
-        final int minDigit = Integer.parseInt(args[MIN_DIGIT_ARG]);
-        final int maxDigit = Integer.parseInt(args[MAX_DIGIT_ARG]);
-        final Random randomNumbers = new Random();
-        final List<Integer> unsortedInts =
-            randomNumbers.ints(totalNumbers, minDigit, maxDigit)
-                .boxed()
-                .toList();
-
-        IO.println("Unordered stream: ");
-        printList.accept(unsortedInts);
-        IO.println("Ordered stream: ");
-        printList.accept(sort(unsortedInts));
-    }
-    private static final int MAX_DIGIT_ARG = 2;
-    private static final int MIN_DIGIT_ARG = 1;
-    private static final int NUMBERS_TO_GENERATE_ARG = 0;
-    private static final int MAX_ARGS = 3;
 
 }

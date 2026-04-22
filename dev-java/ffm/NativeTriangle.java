@@ -29,7 +29,7 @@ public class NativeTriangle
             var strdup_address = stdLib.find("strdup")
                 .get();
 
-            // Create a description of the C function
+            // Create a description of the C functionff
             var layout = MemoryLayout.sequenceLayout(Long.MAX_VALUE, JAVA_BYTE);
             var strdup_signature = FunctionDescriptor.of(ValueLayout.ADDRESS
                 .withTargetLayout(layout), ValueLayout.ADDRESS.withTargetLayout(layout));

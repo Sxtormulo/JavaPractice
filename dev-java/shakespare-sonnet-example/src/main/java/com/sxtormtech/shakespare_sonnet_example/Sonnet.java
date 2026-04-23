@@ -20,7 +20,7 @@ package com.sxtormtech.shakespare_sonnet_example;
 import module java.base;
 
 /**
- * Record class to contain the a Sonnet.
+ * Record class to contain a Sonnet.
  *
  * @param lines the lines that constitute a sonnet
  */

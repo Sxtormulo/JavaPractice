@@ -20,22 +20,38 @@ package com.sxtormtech.shakespare_sonnet_example;
 import module java.base;
 
 /**
- *
- * @author Sxtormulo
+ * Reads sonnets from an input stream. Buffering sonnets. Each read returns a new sonnet
  */
 public class SonnetReader extends BufferedReader
 {
 
+    /**
+     * Creates a buffering sonnet input stream, that uses the default size buffer.
+     *
+     * @param reader the sonnet stream reader
+     */
     public SonnetReader(Reader reader)
     {
         super(reader);
     }
 
+    /**
+     * Creates a buffering sonnet input stream from a input stream, that uses the
+     * default size buffer.
+     *
+     * @param inputStream the sonnet input stream
+     */
     public SonnetReader(InputStream inputStream)
     {
         this(new InputStreamReader(inputStream));
     }
 
+    /**
+     * Skip the indicated number of lines
+     *
+     * @param lines the lines to skip
+     * @throws IOException If an I/O error occurs
+     */
     public void skipLines(int lines) throws IOException
     {
         for(int i = 0; i < lines; i++)
@@ -44,6 +60,12 @@ public class SonnetReader extends BufferedReader
         }
     }
 
+    /**
+     * Skip the header of the next sonnet
+     *
+     * @return the next line after the header
+     * @throws IOException If an I/O error occurs
+     */
     private String skipSonnetHeader() throws IOException
     {
         String line = skipBlankLines();
@@ -57,6 +79,12 @@ public class SonnetReader extends BufferedReader
         return line;
     }
 
+    /**
+     * Skips blank lines until the next line with content
+     *
+     * @return the line with content after the blank lines
+     * @throws IOException If I/O error occurs
+     */
     private String skipBlankLines() throws IOException
     {
         String line;
@@ -67,6 +95,12 @@ public class SonnetReader extends BufferedReader
         return line;
     }
 
+    /**
+     * Reads the next sonnet
+     *
+     * @return the next sonnet in the stream
+     * @throws IOException If an I/O error occurs
+     */
     public Sonnet readNextSonnet() throws IOException
     {
         String line = skipSonnetHeader();

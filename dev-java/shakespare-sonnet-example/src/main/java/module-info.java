@@ -16,6 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/**
+ * Executes an example that shows how to interact with IO actions using a Shakespeare sonnet.
+ */
 module com.sxtormtech.shakespare_sonnet_example {
     exports com.sxtormtech.shakespare_sonnet_example;
 }

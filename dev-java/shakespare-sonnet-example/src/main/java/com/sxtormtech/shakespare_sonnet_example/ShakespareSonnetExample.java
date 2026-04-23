@@ -58,4 +58,5 @@ public class ShakespareSonnetExample
         }
         IO.println("# sonnets = %d".formatted(sonnets.size()));
     }
+    s
 }

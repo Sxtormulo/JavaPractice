@@ -46,7 +46,8 @@ public record Sonnet(List<String> lines)
     }
 
     /**
-     * Returns the lines that constitute the {@code Sonnet}
+     * Returns the lines that constitute the {@code Sonnet}. <strong>The returned lines
+     * are immutable.</strong>
      *
      * @return the lines of the sonnet
      */

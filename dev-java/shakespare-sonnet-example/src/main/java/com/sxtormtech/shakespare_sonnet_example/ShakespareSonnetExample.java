@@ -17,10 +17,6 @@
  */
 package com.sxtormtech.shakespare_sonnet_example;
 
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-
 import module java.base;
 
 /**
@@ -30,33 +26,36 @@ import module java.base;
 public class ShakespareSonnetExample
 {
 
+    private static final int ERROR = -1;
+    private static final int SONNET_START = 33;
+
     void main()
     {
         final String url = "https://www.gutenberg.org/cache/epub/1041/pg1041.txt";
-        var sonnetsURI = URI.create(url);
-        HttpResponse<InputStream> sonnetsResponse = null;
-        try
+        final var sonnets = new ArrayList<Sonnet>();
+        try(var sonnetStream = URI.create(url)
+            .toURL()
+            .openStream(); var reader = new SonnetReader(sonnetStream))
         {
-            final HttpRequest sonnetsRequest =
-                HttpRequest.newBuilder(sonnetsURI)
-                    .GET()
-                    .build();
-            sonnetsResponse =
-                CLIENT.send(sonnetsRequest, HttpResponse.BodyHandlers.ofInputStream());
+            reader.skipLines(SONNET_START);
+            var sonnet = reader.readNextSonnet();
+            while(sonnet != null)
+            {
+                sonnets.add(sonnet);
+                sonnet = reader.readNextSonnet();
+            }
 
         }
-        catch(IOException | InterruptedException iOException)
+        catch(MalformedURLException malformedURL)
         {
-            System.err.println("Exception when retrieving the url" + iOException
-                .getMessage());
-            System.exit(-1);
+            System.err.println("Malformed URL %s".formatted(malformedURL.getMessage()));
+            System.exit(ERROR);
         }
-//        try(final var sonnetsStream = sonnetsResponse.body();  )
-//        {
-//
-//        }
-
+        catch(IOException iOException)
+        {
+            iOException.printStackTrace();
+            System.exit(ERROR);
+        }
+        IO.println("# sonnets = %d".formatted(sonnets.size()));
     }
-    private static final HttpClient CLIENT = HttpClient.newHttpClient();
-
 }

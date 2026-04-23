@@ -32,9 +32,9 @@ public record Sonnet(List<String> lines)
      *
      * @param lines the lines that make up the Sonnet
      */
-    public Sonnet(List<String> lines)
+    public Sonnet
     {
-        this.lines = new ArrayList<>(lines);
+        lines = new ArrayList<>(lines);
     }
 
     /**
@@ -65,6 +65,14 @@ public record Sonnet(List<String> lines)
     public void add(String line)
     {
         lines.add(line);
+    }
+
+    /**
+     * Remove all lines from the Sonnet
+     */
+    public void clear()
+    {
+        lines.clear();
     }
 
 }

@@ -24,7 +24,7 @@ import module java.base;
  *
  * @param lines the lines that constitute a sonnet
  */
-public record Sonnet(List<String> lines)
+record Sonnet(List<String> lines)
     {
 
     /**

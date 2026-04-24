@@ -32,18 +32,21 @@ public class ShakespareSonnetExample
     void main()
     {
         final String url = "https://www.gutenberg.org/cache/epub/1041/pg1041.txt";
-        final var sonnets = new ArrayList<Sonnet>();
-        try(var sonnetStream = URI.create(url)
-            .toURL()
-            .openStream(); var reader = new SonnetReader(sonnetStream))
+        final List<Sonnet> sonnets;
+        List<Sonnet> collectedSonnets = new ArrayList<>();
+        //        try(var sonnetStream = URI.create(url)
+        //            .toURL()
+        //            .openStream(); var reader = new BufferedReader(new InputStreamReader(
+        //                sonnetStream)); var lines = reader.lines())
+
+        try(var inputStream = this.getClass()
+            .getResourceAsStream("/pg1041.txt"); var reader = new BufferedReader(
+            new InputStreamReader(inputStream)); var lines = reader
+            .lines())
         {
-            reader.skipLines(SONNET_START);
-            var sonnet = reader.readNextSonnet();
-            while(sonnet != null)
-            {
-                sonnets.add(sonnet);
-                sonnet = reader.readNextSonnet();
-            }
+            collectedSonnets.addAll(lines.skip(SONNET_START)
+                .gather(gatherSonnets()).peek(s -> s.lines().forEach(IO::println))
+                .toList());
 
         }
         catch(MalformedURLException malformedURL)
@@ -56,7 +59,44 @@ public class ShakespareSonnetExample
             iOException.printStackTrace();
             System.exit(ERROR);
         }
+        sonnets = collectedSonnets;
         IO.println("# sonnets = %d".formatted(sonnets.size()));
     }
-    s
+
+    Gatherer<String, ?, Sonnet> gatherSonnets()
+    {
+        class SonnetLines
+        {
+
+            int blankLines = 0;
+            final Sonnet sonnet = new Sonnet();
+        }
+        Supplier<SonnetLines> newSonnet = SonnetLines::new;
+        Gatherer.Integrator<SonnetLines, String, Sonnet> getSonnet =
+            (sonnetLines, line, downstream) ->
+        {
+
+            if(downstream.isRejecting()
+                || line.startsWith("*** END OF THE PROJECT GUTENBERG EBOOK"))
+                return false;
+
+            final Sonnet sonnet = sonnetLines.sonnet;
+
+            if(!line.isBlank())
+            {
+                if(sonnetLines.blankLines % 2 != 0) sonnet.add(line);
+                else ++sonnetLines.blankLines;
+            }
+            else if(!sonnet.lines().isEmpty())
+            {
+                ++sonnetLines.blankLines;
+                var isRejecting = downstream.push(sonnet);
+                sonnet.clear();
+                return isRejecting;
+            }
+
+            return true;
+        };
+        return Gatherer.ofSequential(newSonnet, getSonnet);
+    }
 }

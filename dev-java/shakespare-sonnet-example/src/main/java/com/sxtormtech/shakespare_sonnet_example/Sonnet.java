@@ -46,6 +46,22 @@ record Sonnet(List<String> lines)
     }
 
     /**
+     * Returns a compressed representation of the lines in the sonnet.
+     *
+     * @return the compressed bytes that represent the sonnet.
+     * @throws IOException If an I/O error occurs
+     */
+    byte[] getCompressedBytes() throws IOException
+    {
+        final var byteArrayOutputStream = new ByteArrayOutputStream();
+        try(var printer = new PrintWriter(new GZIPOutputStream(byteArrayOutputStream)))
+        {
+            lines.forEach(printer::println);
+        }
+        return byteArrayOutputStream.toByteArray();
+    }
+
+    /**
      * Returns the lines that constitute the {@code Sonnet}. <strong>The returned lines
      * are immutable.</strong>
      *
@@ -57,6 +73,11 @@ record Sonnet(List<String> lines)
         return List.copyOf(lines);
     }
 
+    /**
+     * Add a line to the {@code Sonnet}
+     *
+     * @param line the new line of the sonnet
+     */
     /**
      * Add a line to the {@code Sonnet}
      *

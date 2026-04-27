@@ -18,6 +18,7 @@
 package com.sxtormtech.shakespare_sonnet_example;
 
 import module java.base;
+import java.lang.System.Logger.Level;
 
 /**
  *
@@ -29,41 +30,122 @@ public class ShakespareSonnetExample
     private static final int ERROR = -1;
     private static final int SONNET_START = 33;
 
-    void main()
+    /**
+     * Collect the sonnets from the given resource. First try to use a file saved with
+     * the sonnets name. If the file if not found then try to get it from the web.
+     *
+     * @param sonnetsFileName   the sonnets file name
+     * @param sonnetsWebAddress the sonnets web url
+     * @return the list of sonnets in the resourse
+     */
+    private List<Sonnet> collectSonnets(String sonnetsFileName,
+                                        String sonnetsWebAddress)
     {
-        final String url = "https://www.gutenberg.org/cache/epub/1041/pg1041.txt";
-        final List<Sonnet> sonnets;
         List<Sonnet> collectedSonnets = new ArrayList<>();
-        //        try(var sonnetStream = URI.create(url)
-        //            .toURL()
-        //            .openStream(); var reader = new BufferedReader(new InputStreamReader(
-        //                sonnetStream)); var lines = reader.lines())
+        var sonnetURL = getClass().getResource(sonnetsFileName);
+        if(sonnetURL == null)
+        {
+            try
+            {
+                sonnetURL = URI.create(sonnetsWebAddress).toURL();
+            }
+            catch(MalformedURLException malformedURLException)
+            {
+                System.getLogger(ShakespareSonnetExample.class.getName())
+                    .log(Level.ERROR, "Entered malformed url: "
+                         .formatted(malformedURLException.getMessage()),
+                         malformedURLException);
+            }
+        }
 
-        try(var inputStream = this.getClass()
-            .getResourceAsStream("/pg1041.txt"); var reader = new BufferedReader(
-            new InputStreamReader(inputStream)); var lines = reader
-            .lines())
+        try(final var inputStream = sonnetURL.openStream();
+            final var reader = new BufferedReader(new InputStreamReader(inputStream));
+            final var lines = reader.lines())
         {
             collectedSonnets.addAll(lines.skip(SONNET_START)
-                .gather(gatherSonnets()).peek(s -> s.lines().forEach(IO::println))
+                .gather(gatherSonnets())
                 .toList());
 
         }
-        catch(MalformedURLException malformedURL)
+        catch(IOException iOException)
         {
-            System.err.println("Malformed URL %s".formatted(malformedURL.getMessage()));
-            System.exit(ERROR);
+            logErrorAndExit("Error while proccessing the sonnets", iOException);
+        }
+        return collectedSonnets;
+
+    }
+
+    /**
+     * Compress the passed sonnets. And save it to a binary file. Saving in the binary
+     * file the necessary data for decompression
+     *
+     * @param compressedSonnetsPath the path where the compressed sonnets will be saved
+     * @param sonnets               the sonnets to compress
+     */
+    private void compressSonnetsToBinFile(Path compressedSonnetsPath,
+                                          final List<Sonnet> sonnets)
+    {
+        int numberOfSonnets = sonnets.size();
+        try(var sonnetFile = Files.newOutputStream(compressedSonnetsPath);
+            var sonnetDataWriter = new DataOutputStream(sonnetFile))
+        {
+            List<SonnetData> compressedSonnetsData = new ArrayList<>();
+            byte[] encodedSonnetsBytes = null;
+
+            try(var encodedSonnets = new ByteArrayOutputStream())
+            {
+                for(var sonnet : sonnets)
+                {
+                    final var compressedSonnet = sonnet.getCompressedBytes();
+                    compressedSonnetsData.add(new SonnetData(encodedSonnets.size(),
+                                                             compressedSonnet.length));
+                    encodedSonnets.write(compressedSonnet);
+                }
+                sonnetDataWriter.writeInt(numberOfSonnets);
+                for(var sonnetData : compressedSonnetsData)
+                {
+                    sonnetDataWriter.writeInt(sonnetData.offset());
+                    sonnetDataWriter.writeInt(sonnetData.length());
+                }
+                encodedSonnetsBytes = encodedSonnets.toByteArray();
+
+            }
+            sonnetFile.write(encodedSonnetsBytes);
         }
         catch(IOException iOException)
         {
-            iOException.printStackTrace();
-            System.exit(ERROR);
+            logErrorAndExit("Error while encoding Sonnets", iOException);
         }
-        sonnets = collectedSonnets;
-        IO.println("# sonnets = %d".formatted(sonnets.size()));
     }
 
-    Gatherer<String, ?, Sonnet> gatherSonnets()
+    /**
+     * Create a temporary file to save the compressed sonnets
+     *
+     * @return the path of the created file
+     */
+    private Path createTmpSonnetBinFile()
+    {
+        Path compressedSonnetsPath = null;
+        try
+        {
+            final Path home = Path.of(System.getProperty("user.home"), "/tmp");
+            compressedSonnetsPath = Files.createTempFile(home, "sonnets",
+                                                         ".bin");
+        }
+        catch(IOException iOException)
+        {
+            logErrorAndExit("Error at creating tempfile", iOException);
+        }
+        return compressedSonnetsPath;
+    }
+
+    /**
+     * Gather the sonnets in a stream. Skipping the header of each sonnet and returnting
+     * the lines in it
+     *
+     * @return the lines that conforms the sonnet
+     */
+    private Gatherer<String, ?, Sonnet> gatherSonnets()
     {
         class SonnetLines
         {
@@ -99,4 +181,47 @@ public class ShakespareSonnetExample
         };
         return Gatherer.ofSequential(newSonnet, getSonnet);
     }
+
+    /**
+     * Log the error message and exit the application
+     *
+     * @param errorMessage the message to log
+     * @param iOException  the error to log
+     */
+    private void logErrorAndExit(String errorMessage, IOException iOException)
+    {
+        System.getLogger(ShakespareSonnetExample.class.getName())
+            .log(Level.ERROR, errorMessage, iOException);
+        System.exit(ERROR);
+    }
+
+    void main()
+    {
+        final String sonnetWebAddress =
+            "https://www.gutenberg.org/cache/epub/1041/pg1041.txt";
+        final List<Sonnet> sonnets;
+        int numberOfSonnets;
+
+        final String sonnetsFilename = "/pg1041.txt";
+
+        sonnets = collectSonnets(sonnetsFilename, sonnetWebAddress);
+        numberOfSonnets = sonnets.size();
+        Path compressedSonnetsPath = createTmpSonnetBinFile();
+
+        compressSonnetsToBinFile(compressedSonnetsPath, sonnets);
+
+        IO.println("# sonnets = %d".formatted(sonnets.size()));
+    }
+
+    /**
+     * Local record to save sonnet data
+     *
+     * @param offset the offset int the file
+     * @param length the length of the sonnet
+     */
+    private record SonnetData(int offset, int length)
+        {
+
+    }
+
 }

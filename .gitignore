@@ -27,3 +27,4 @@ replay_pid*
 out/*
 # omit mail
 .maildir/*
+/dev-java/shakespare-sonnet-example/target/

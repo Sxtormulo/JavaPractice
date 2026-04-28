@@ -46,18 +46,6 @@ record Sonnet(List<String> lines)
     }
 
     /**
-     * Return a new {@code Sonnet} with a immutable copy of the lines of the previous
-     * sonnet
-     *
-     * @param original the {@code Sonnet} to be copied
-     * @return a new sonnet with the original datam
-     */
-    public static Sonnet of(Sonnet original)
-    {
-        return new Sonnet(original.lines());
-    }
-
-    /**
      * Add a line to the {@code Sonnet}
      *
      * @param line the new line of the sonnet
@@ -106,6 +94,18 @@ record Sonnet(List<String> lines)
             lines.forEach(printer::println);
         }
         return byteArrayOutputStream.toByteArray();
+    }
+
+    /**
+     * Return a new {@code Sonnet} with a immutable copy of the lines of the previous
+     * sonnet
+     *
+     * @param original the {@code Sonnet} to be copied
+     * @return a new sonnet with the original datam
+     */
+    public static Sonnet of(Sonnet original)
+    {
+        return new Sonnet(original.lines());
     }
 
 }

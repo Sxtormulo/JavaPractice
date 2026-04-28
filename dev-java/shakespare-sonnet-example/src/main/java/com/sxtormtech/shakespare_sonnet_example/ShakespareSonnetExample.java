@@ -28,6 +28,7 @@ public class ShakespareSonnetExample
 {
 
     private static final int ERROR = -1;
+    private static final int OFFSET = 1;
     private static final int SONNET_START = 33;
 
     /**
@@ -41,7 +42,7 @@ public class ShakespareSonnetExample
     private List<Sonnet> collectSonnets(String sonnetsFileName,
                                         String sonnetsWebAddress)
     {
-        List<Sonnet> collectedSonnets = new ArrayList<>();
+        List<Sonnet> collectedSonnets;
         var sonnetURL = getClass().getResource(sonnetsFileName);
         if(sonnetURL == null)
         {
@@ -51,10 +52,9 @@ public class ShakespareSonnetExample
             }
             catch(MalformedURLException malformedURLException)
             {
-                System.getLogger(ShakespareSonnetExample.class.getName())
-                    .log(Level.ERROR, "Entered malformed url: "
-                         .formatted(malformedURLException.getMessage()),
-                         malformedURLException);
+                logErrorAndExit("Entered malformed url, using default sonnet: "
+                    .formatted(malformedURLException.getMessage()),
+                                malformedURLException);
             }
         }
 
@@ -62,17 +62,63 @@ public class ShakespareSonnetExample
             final var reader = new BufferedReader(new InputStreamReader(inputStream));
             final var lines = reader.lines())
         {
-            collectedSonnets.addAll(lines.skip(SONNET_START)
+            collectedSonnets = lines.skip(SONNET_START)
                 .gather(gatherSonnets())
-                .toList());
+                .toList();
 
         }
         catch(IOException iOException)
         {
-            logErrorAndExit("Error while proccessing the sonnets", iOException);
+            logError("Error while proccessing the sonnets", iOException);
+            collectedSonnets = new ArrayList<>(2);
         }
         return collectedSonnets;
 
+    }
+
+    /**
+     * Create a temporary file to save the compressed sonnets
+     *
+     * @return the path of the created file
+     */
+    private Path createTmpSonnetBinFile()
+    {
+        Path compressedSonnetsPath = null;
+        try
+        {
+            final Path home = Path.of(System.getProperty("user.home"), "/tmp");
+            compressedSonnetsPath = Files.createTempFile(home, "sonnets",
+                                                         ".bin");
+        }
+        catch(IOException iOException)
+        {
+            logErrorAndExit("Error at creating tempfile", iOException);
+        }
+        return compressedSonnetsPath;
+    }
+
+    /**
+     * Log the exception as a message of {@code Error} level.
+     *
+     * @param errorMessage the message to log
+     * @param iOException  the exception trace to log
+     */
+    private void logError(String errorMessage, IOException iOException)
+    {
+        System.getLogger(ShakespareSonnetExample.class.getName())
+            .log(Level.ERROR, errorMessage, iOException);
+    }
+
+    /**
+     * Log the error message and exit the application
+     *
+     * @param errorMessage the message to log
+     * @param iOException  the error to log
+     */
+    private void logErrorAndExit(String errorMessage, IOException iOException)
+    {
+        logError(errorMessage, iOException);
+        System.exit(ERROR);
     }
 
     /**
@@ -82,8 +128,8 @@ public class ShakespareSonnetExample
      * @param compressedSonnetsPath the path where the compressed sonnets will be saved
      * @param sonnets               the sonnets to compress
      */
-    private void compressSonnetsToBinFile(Path compressedSonnetsPath,
-                                          final List<Sonnet> sonnets)
+    void compressSonnetsToBinFile(Path compressedSonnetsPath,
+                                  final List<Sonnet> sonnets)
     {
         int numberOfSonnets = sonnets.size();
         try(var sonnetFile = Files.newOutputStream(compressedSonnetsPath);
@@ -119,24 +165,47 @@ public class ShakespareSonnetExample
     }
 
     /**
-     * Create a temporary file to save the compressed sonnets
+     * Select a sonnet from the compressed file and print it to the screen
      *
-     * @return the path of the created file
+     * @param compressedSonnetsPath the place where the compressed sonnet is stored
+     * @param sonnetNumber          the selected sonnet to decompress
      */
-    private Path createTmpSonnetBinFile()
+    void decompressSelectedSonnet(Path compressedSonnetsPath, int sonnetNumber)
     {
-        Path compressedSonnetsPath = null;
-        try
+        int numberOfSonnets;
+        try(var compressedSonnets = Files.newInputStream(compressedSonnetsPath);
+            var sonnetsBuffer = new BufferedInputStream(compressedSonnets);
+            var sonnetsDataStream = new DataInputStream(compressedSonnets))
         {
-            final Path home = Path.of(System.getProperty("user.home"), "/tmp");
-            compressedSonnetsPath = Files.createTempFile(home, "sonnets",
-                                                         ".bin");
+            numberOfSonnets = sonnetsDataStream.readInt();
+            IO.println("Total sonnets = " + numberOfSonnets);
+            List<SonnetData> sonnetsData = new ArrayList<>(numberOfSonnets);
+
+            for(int sonnet = 0; sonnet < numberOfSonnets; sonnet++)
+            {
+                sonnetsData.add(new SonnetData(sonnetsDataStream.readInt(),
+                                               sonnetsDataStream.readInt()));
+            }
+
+            var sonnetData = sonnetsData.get(sonnetNumber - OFFSET);
+            skip(sonnetsBuffer, sonnetData.offset());
+            var bytes = readBytes(sonnetsBuffer, sonnetData.length());
+
+            try(var sonnetBytes = new ByteArrayInputStream(bytes);
+                var decodeSonnet = new GZIPInputStream(sonnetBytes);
+                var inputReader = new InputStreamReader(decodeSonnet);
+                var sonnetReader = new BufferedReader(inputReader))
+            {
+                var sonnetLines = sonnetReader.lines().toList();
+                sonnetLines.forEach(IO::println);
+
+            }
+
         }
         catch(IOException iOException)
         {
-            logErrorAndExit("Error at creating tempfile", iOException);
+            logError("IO error %s".formatted(iOException.getMessage()), iOException);
         }
-        return compressedSonnetsPath;
     }
 
     /**
@@ -145,7 +214,7 @@ public class ShakespareSonnetExample
      *
      * @return the lines that conforms the sonnet
      */
-    private Gatherer<String, ?, Sonnet> gatherSonnets()
+    Gatherer<String, ?, Sonnet> gatherSonnets()
     {
         class SonnetLines
         {
@@ -172,7 +241,7 @@ public class ShakespareSonnetExample
             else if(!sonnet.lines().isEmpty())
             {
                 ++sonnetLines.blankLines;
-                var isRejecting = downstream.push(sonnet);
+                var isRejecting = downstream.push(Sonnet.of(sonnet));
                 sonnet.clear();
                 return isRejecting;
             }
@@ -182,35 +251,65 @@ public class ShakespareSonnetExample
         return Gatherer.ofSequential(newSonnet, getSonnet);
     }
 
-    /**
-     * Log the error message and exit the application
-     *
-     * @param errorMessage the message to log
-     * @param iOException  the error to log
-     */
-    private void logErrorAndExit(String errorMessage, IOException iOException)
-    {
-        System.getLogger(ShakespareSonnetExample.class.getName())
-            .log(Level.ERROR, errorMessage, iOException);
-        System.exit(ERROR);
-    }
-
     void main()
     {
         final String sonnetWebAddress =
             "https://www.gutenberg.org/cache/epub/1041/pg1041.txt";
         final List<Sonnet> sonnets;
         int numberOfSonnets;
+        int sonnetNumber = 75;
 
         final String sonnetsFilename = "/pg1041.txt";
+        var compressedSonnetsPath = createTmpSonnetBinFile();
 
         sonnets = collectSonnets(sonnetsFilename, sonnetWebAddress);
-        numberOfSonnets = sonnets.size();
-        Path compressedSonnetsPath = createTmpSonnetBinFile();
 
         compressSonnetsToBinFile(compressedSonnetsPath, sonnets);
 
-        IO.println("# sonnets = %d".formatted(sonnets.size()));
+        decompressSelectedSonnet(compressedSonnetsPath, sonnetNumber);
+
+    }
+
+    /**
+     * Read from the provided buffered input until the specified length is reached.
+     * Returns the bytes read.
+     *
+     * @param inputBuffer the buffer from which to read
+     * @param length      the total length to read
+     * @return the actual bytes read
+     * @throws IOException if an I/O error occurs
+     */
+    byte[] readBytes(BufferedInputStream inputBuffer, int length) throws IOException
+    {
+        final var bytes = new byte[length];
+        final var buffer = new byte[length];
+        int copied = 0;
+        int read;
+        do
+        {
+            read = inputBuffer.read(buffer);
+            System.arraycopy(buffer, 0, bytes, copied, read);
+            copied += read;
+        } while(copied < length);
+        return bytes;
+    }
+
+    /**
+     * Continue skipping from the buffer until reach the required offset
+     *
+     * @param inputBuffer the buffer from which to skip
+     * @param offset      the amount of bytes to be omitted;
+     * @return the actual number of omitted bytes
+     * @throws IOException if an I/O error occurs
+     */
+    long skip(BufferedInputStream inputBuffer, int offset) throws IOException
+    {
+        long skip = 0L;
+        while(skip < offset)
+        {
+            skip += inputBuffer.skip(offset - skip);
+        }
+        return skip;
     }
 
     /**
